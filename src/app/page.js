@@ -7,25 +7,18 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ฟังก์ชันดึงข้อมูลอากาศและเก็บข้อมูลใน localStorage
+  // ฟังก์ชันดึงข้อมูลอากาศและส่งข้อมูลไปยัง API โดยตรง
   const fetchAirQualityData = async (latitude, longitude) => {
     try {
       const res = await fetch(`/api/airquality?lat=${latitude}&long=${longitude}`);
       const data = await res.json();
-  
+
       if (data.results.length > 0) {
         const result = data.results[0];
         const location = result.location;
         const pm25Value = result.measurements[0].value;
         const lastUpdated = result.measurements[0].lastUpdated;
-  
-        // เก็บค่าใน localStorage
-        localStorage.setItem("lat", latitude);
-        localStorage.setItem("long", longitude);
-        localStorage.setItem("location", location);
-        localStorage.setItem("pm25Value", pm25Value);
-        localStorage.setItem("lastUpdated", lastUpdated);
-  
+
         // เซ็ตค่า state เพื่อ render
         setAirQualityData({
           coordinates: { latitude, longitude },
@@ -34,7 +27,10 @@ export default function Home() {
           lastUpdated
         });
       } else {
-        setError("ไม่พบข้อมูลอากาศสำหรับตำแหน่งนี้");
+        // ขยับพิกัดทีละ 100 เมตรแล้วลองใหม่
+        const newLatitude = latitude + 0.001; // 100 เมตรในแนวเส้นขนาน
+        const newLongitude = longitude + 0.001; // 100 เมตรในแนวเส้นเมริเดียน
+        await fetchAirQualityData(newLatitude, newLongitude); // เรียก API ใหม่
       }
     } catch (error) {
       setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
@@ -42,41 +38,22 @@ export default function Home() {
       setLoading(false);
     }
   };
-  
 
   useEffect(() => {
     const fetchData = async () => {
-      // เช็คว่ามีข้อมูลใน localStorage หรือไม่
-      const location = localStorage.getItem("location");
-      const pm25Value = localStorage.getItem("pm25Value");
-      const lastUpdated = localStorage.getItem("lastUpdated");
-      const latitude = localStorage.getItem("lat");
-      const longitude = localStorage.getItem("long");
-
-      // ถ้ามีข้อมูลใน localStorage ให้นำมาใช้
-      if (location && pm25Value && lastUpdated) {
-        setAirQualityData({
-          coordinates: { latitude, longitude },
-          location,
-          pm25Value,
-          lastUpdated
+      try {
+        // ดึงพิกัดจาก Geolocation API
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
         });
-        setLoading(false);
-      } else {
-        try {
-          // ถ้าไม่มี ให้ดึงพิกัดจาก Geolocation API
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject);
-          });
-          const lat = position.coords.latitude;
-          const long = position.coords.longitude;
+        const lat = position.coords.latitude;
+        const long = position.coords.longitude;
 
-          // ดึงข้อมูลจาก OpenAQ API โดยใช้พิกัดที่ได้จาก Geolocation
-          await fetchAirQualityData(lat, long);
-        } catch (error) {
-          setError("ไม่สามารถดึงตำแหน่งได้");
-          setLoading(false);
-        }
+        // ดึงข้อมูลจาก API โดยใช้พิกัดที่ได้จาก Geolocation
+        await fetchAirQualityData(lat, long);
+      } catch (error) {
+        setError("ไม่สามารถดึงตำแหน่งได้");
+        setLoading(false);
       }
     };
 

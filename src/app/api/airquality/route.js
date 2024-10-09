@@ -1,5 +1,3 @@
-// app/api/airquality/route.js
-
 import { NextResponse } from 'next/server';
 
 // ฟังก์ชันในการดึงค่าพิกัดจาก query parameter และเรียก OpenAQ API
