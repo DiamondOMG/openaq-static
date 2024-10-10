@@ -53,15 +53,15 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // // ดึงพิกัดจาก Geolocation API
-        // const position = await new Promise((resolve, reject) => {
-        //   navigator.geolocation.getCurrentPosition(resolve, reject);
-        // });
-        // const lat = position.coords.latitude;
-        // const long = position.coords.longitude;
+        // ดึงพิกัดจาก Geolocation API
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        const lat = position.coords.latitude;
+        const long = position.coords.longitude;
 
         // ดึงข้อมูลจาก API โดยใช้พิกัดที่ได้จาก Geolocation
-        await fetchAirQualityData(13.7456517, 100.5408732);
+        await fetchAirQualityData(lat, long);
       } catch (error) {
         setError("ไม่สามารถดึงตำแหน่งได้");
         setLoading(false);
