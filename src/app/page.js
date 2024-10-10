@@ -8,7 +8,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   // ฟังก์ชันดึงข้อมูลอากาศและส่งข้อมูลไปยัง API โดยตรง
-  const fetchAirQualityData = async (latitude, longitude) => {
+  const fetchAirQualityData = async (latitude, longitude, retryCount = 0) => {
     try {
       const res = await fetch(`/api/airquality?lat=${latitude}&long=${longitude}`);
       const data = await res.json();
@@ -16,21 +16,32 @@ export default function Home() {
       if (data.results.length > 0) {
         const result = data.results[0];
         const location = result.location;
-        const pm25Value = result.measurements[0].value;
-        const lastUpdated = result.measurements[0].lastUpdated;
+        
+        // หา object ที่มี parameter เป็น "pm25"
+        const pm25Measurement = result.measurements.find(measurement => measurement.parameter === "pm25");
 
-        // เซ็ตค่า state เพื่อ render
-        setAirQualityData({
-          coordinates: { latitude, longitude },
-          location,
-          pm25Value,
-          lastUpdated
-        });
-      } else {
+        if (pm25Measurement) {
+          const pm25Value = pm25Measurement.value;
+          const lastUpdated = pm25Measurement.lastUpdated;
+
+          // เซ็ตค่า state เพื่อ render
+          setAirQualityData({
+            coordinates: { latitude, longitude },
+            location,
+            pm25Value,
+            lastUpdated,
+          });
+        } else {
+          setError("ไม่พบข้อมูลค่า PM2.5 สำหรับตำแหน่งนี้");
+        }
+      } else if (retryCount < 5) {
         // ขยับพิกัดทีละ 100 เมตรแล้วลองใหม่
-        const newLatitude = latitude + 0.001; // 100 เมตรในแนวเส้นขนาน
-        const newLongitude = longitude + 0.001; // 100 เมตรในแนวเส้นเมริเดียน
-        await fetchAirQualityData(newLatitude, newLongitude); // เรียก API ใหม่
+        const newLatitude = latitude + 0.25; 
+        const newLongitude = longitude + 0.25; 
+        console.log(`Retrying with new coords: lat ${newLatitude}, long ${newLongitude}`);
+        await fetchAirQualityData(newLatitude, newLongitude, retryCount + 1); // เรียก API ใหม่
+      } else {
+        setError("ไม่พบข้อมูลอากาศสำหรับตำแหน่งนี้หลังจากพยายามหลายครั้ง");
       }
     } catch (error) {
       setError("เกิดข้อผิดพลาดในการดึงข้อมูล");
@@ -64,8 +75,8 @@ export default function Home() {
   if (error) return <div>{error}</div>;
 
   // ดึงข้อมูลที่ได้จาก state
-  const { latitude, longitude } = airQualityData.coordinates;
-  const { location, pm25Value, lastUpdated } = airQualityData;
+  const { latitude, longitude } = airQualityData?.coordinates || {};
+  const { location, pm25Value, lastUpdated } = airQualityData || {};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -76,7 +87,7 @@ export default function Home() {
           <li><strong>ลองจิจูด:</strong> {longitude}</li>
           <li><strong>สถานที่:</strong> {location}</li>
           <li><strong>ค่า PM2.5:</strong> {pm25Value} µg/m³</li>
-          <li><strong>อัปเดตล่าสุด:</strong> {new Date(lastUpdated).toLocaleString()}</li>
+          <li><strong>อัปเดตล่าสุด:</strong> {lastUpdated ? new Date(lastUpdated).toLocaleString() : ''}</li>
         </ul>
       </div>
     </div>

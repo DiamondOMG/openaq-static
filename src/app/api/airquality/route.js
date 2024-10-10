@@ -12,7 +12,7 @@ export async function GET(req) {
     }
 
     // สร้าง URL สำหรับการเรียก API ด้วยค่าพิกัด
-    const apiUrl = `https://api.openaq.org/v2/latest?coordinates=${lat},${long}&parameter=pm25`;
+    const apiUrl = `https://api.openaq.org/v2/latest?coordinates=${lat},${long}&radius=25000&order_by=distance&sort=asc&limit=1`;
 
     // เรียก OpenAQ API พร้อมกับ API Key
     const response = await fetch(apiUrl, {
