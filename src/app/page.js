@@ -71,7 +71,13 @@ export default function Home() {
     fetchData();
   }, []);
 
-  if (loading) return <div>กำลังโหลด...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg font-semibold">กำลังโหลด...</div>
+      </div>
+    );
+  }
   if (error) return <div>{error}</div>;
 
   // ดึงข้อมูลที่ได้จาก state
