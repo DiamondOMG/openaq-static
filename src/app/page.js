@@ -44,7 +44,7 @@ export default function Home() {
 						`ไม่พบข้อมูลค่า PM2.5 สำหรับตำแหน่งนี้ (ละติจูด: ${latitude}, ลองจิจูด: ${longitude})`
 					);
 				}
-			} else if (retryCount < 5) {
+			} else if (data.results.length === 0 && retryCount < 5) {
 				const newLatitude = latitude + 0.25;
 				const newLongitude = longitude + 0.25;
 				console.log(
