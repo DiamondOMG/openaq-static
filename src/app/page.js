@@ -50,24 +50,51 @@ function HomeContent() {
   };
 
   const fetchInitialData = async () => {
-    const gpsLatitude = searchParams.get("gpsLatitude");
-    const gpsLongitude = searchParams.get("gpsLongitude");
+    const cacheKey = "airQualityCache";
+    const cacheData = JSON.parse(localStorage.getItem(cacheKey));
 
-    if (gpsLatitude && gpsLongitude) {
-      const lat = parseFloat(gpsLatitude);
-      const long = parseFloat(gpsLongitude);
-      setCoordinates({ latitude: lat, longitude: long });
-      await fetchAirQualityData(lat, long);
+    // ตรวจสอบว่า cache ยังไม่หมดอายุ
+    if (cacheData && Date.now() - cacheData.timestamp < 3600000) { // 1 ชั่วโมง
+      setCoordinates(cacheData.coordinates);
+      await fetchAirQualityData(cacheData.coordinates.latitude, cacheData.coordinates.longitude);
     } else {
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject);
-        });
-        const { latitude, longitude } = position.coords;
-        setCoordinates({ latitude, longitude });
-        await fetchAirQualityData(latitude, longitude);
-      } catch {
-        setError(`ไม่สามารถดึงตำแหน่งได้`);
+      const gpsLatitude = searchParams.get("gpsLatitude");
+      const gpsLongitude = searchParams.get("gpsLongitude");
+
+      if (gpsLatitude && gpsLongitude) {
+        const lat = parseFloat(gpsLatitude);
+        const long = parseFloat(gpsLongitude);
+        setCoordinates({ latitude: lat, longitude: long });
+        await fetchAirQualityData(lat, long);
+
+        // เก็บข้อมูลลงใน cache
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            coordinates: { latitude: lat, longitude: long },
+            timestamp: Date.now(),
+          })
+        );
+      } else {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+          });
+          const { latitude, longitude } = position.coords;
+          setCoordinates({ latitude, longitude });
+          await fetchAirQualityData(latitude, longitude);
+
+          // เก็บข้อมูลลงใน cache
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              coordinates: { latitude, longitude },
+              timestamp: Date.now(),
+            })
+          );
+        } catch {
+          setError(`ไม่สามารถดึงตำแหน่งได้`);
+        }
       }
     }
   };
@@ -97,7 +124,7 @@ function HomeContent() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white shadow-lg rounded-lg p-6 max-w-sm w-full">
         <h1 className="text-2xl font-bold mb-4 text-center">
-          ข้อมูลคุณภาพอากาศ
+          ข้อมูลคุณภาพอากาศ By Actmedia
         </h1>
         <ul className="text-gray-700">
           <li>
