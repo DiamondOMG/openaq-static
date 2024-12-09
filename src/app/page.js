@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 function HomeContent() {
   const [airQualityData, setAirQualityData] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [coordinates, setCoordinates] = useState({
     latitude: null,
     longitude: null,
@@ -47,8 +46,6 @@ function HomeContent() {
       }
     } catch {
       setError(`เกิดข้อผิดพลาดในการดึงข้อมูล`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,7 +68,6 @@ function HomeContent() {
         await fetchAirQualityData(latitude, longitude);
       } catch {
         setError(`ไม่สามารถดึงตำแหน่งได้`);
-        setLoading(false);
       }
     }
   };
@@ -79,14 +75,6 @@ function HomeContent() {
   useEffect(() => {
     fetchInitialData();
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg font-semibold">กำลังโหลด...</div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
